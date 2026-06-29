@@ -32,9 +32,6 @@ FetchContent_Declare(
 
 FetchContent_MakeAvailable(sdl3 imgui)
 
-# This assumes the SDL source is available in vendored/SDL
-add_subdirectory(vendored/SDL EXCLUDE_FROM_ALL)
-
 # Create your game executable target as usual
 add_executable("${CMAKE_PROJECT_NAME}" ./src/aclicker.cpp ./src/inputsendcore.cpp)
 

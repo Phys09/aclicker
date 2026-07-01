@@ -14,7 +14,10 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS true)
 # set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/$<CONFIGURATION>")
 # set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/$<CONFIGURATION>")
 
+
+# Populate dependencies
 include(FetchContent)
+find_package(Vulkan)
 
 # sdl3 + vulkan as imgui backend
 FetchContent_Declare(
@@ -32,7 +35,7 @@ FetchContent_Declare(
 
 FetchContent_MakeAvailable(sdl3 imgui)
 
-# Create your game executable target as usual
+# Create executable target
 add_executable("${CMAKE_PROJECT_NAME}"
   ./src/aclicker.cpp
   ./src/inputsendcore.cpp
@@ -55,25 +58,31 @@ file(GLOB IMGUI_SOURCES
 
 # Backends
 set(IMGUI_BACKEND_SOURCES
-  ${imgui_SOURCE_DIR}/backends/imgui_impl_glfw.cpp
-  ${imgui_SOURCE_DIR}/backends/imgui_impl_opengl3.cpp
+  ${imgui_SOURCE_DIR}/backends/imgui_impl_SDL3.cpp
 )
 
 # Create imgui target
 add_library(imgui STATIC ${IMGUI_SOURCES} ${IMGUI_BACKEND_SOURCES})
 
-# Configure imgui include directories
+# Configure imgui include directories, adding its own headers and vulkan
 target_include_directories(imgui PUBLIC
   ${imgui_SOURCE_DIR}
   ${imgui_SOURCE_DIR}/backends
+  Vulkan
+  Vulkan_INCLUDE_DIRS
 )
 
-# Link to the actual SDL3 library.
-target_link_libraries(${CMAKE_PROJECT_NAME} PRIVATE SDL3::SDL3)
+# Link imgui with sdl3, vulkan
+target_link_libraries(imgui PUBLIC SDL3::SDL3 Vulkan::Vulkan)
 
-# Find and Link to Vulkan
-find_package(Vulkan)
-target_link_libraries(${CMAKE_PROJECT_NAME} PRIVATE Vulkan)
+# Link main application with imgui, publically transitive linking(?) with what is linked with imgui
+# Mental model:
+#  struct imgui : public SDL3, Vulkan {};
+#  struct CMAKE_PROJECT_NAME : public imgui {};
+#
+#  Mental model seems to be wrong with how project is setup
+#  Requires (at least) vulkan linked with main project directly, not transitively
+target_link_libraries(${CMAKE_PROJECT_NAME} PUBLIC imgui SDL3::SDL3 Vulkan)
 
 message(STATUS "imgui_headers: ${imgui_headers}")
 message(STATUS "imgui_src: ${imgui_src}")

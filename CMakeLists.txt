@@ -8,6 +8,10 @@ set(CMAKE_CXX_STANDARD_REQUIRED true)
 # Export compile commands for clangd/lsp
 set(CMAKE_EXPORT_COMPILE_COMMANDS true)
 
+# Set output directory for SDL built objects.
+# This makes sure that the dynamic library goes into the build directory automatically.
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/$<CONFIGURATION>")
+set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/$<CONFIGURATION>")
 
 # set the output directory for built objects.
 # This makes sure that the dynamic library goes into the build directory automatically.
@@ -58,7 +62,8 @@ file(GLOB IMGUI_SOURCES
 
 # Backends
 set(IMGUI_BACKEND_SOURCES
-  ${imgui_SOURCE_DIR}/backends/imgui_impl_SDL3.cpp
+  ${imgui_SOURCE_DIR}/backends/imgui_impl_sdl3.cpp
+  ${imgui_SOURCE_DIR}/backends/imgui_impl_vulkan.cpp
 )
 
 # Create imgui target

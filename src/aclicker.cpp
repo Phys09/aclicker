@@ -407,10 +407,11 @@ int main(int argc, char **argv) {
     std::println("Usage: ./aclicker.exe <number-of-clicks>");
     return -1;
   }
-  using namespace std::literals;
-  std::vector<std::string> args(argv, argv + argc);
-  aclicker::ParseAndSendInputToOS(argc, args);
-  return 0;
+  // using namespace std::literals;
+  // std::vector<std::string> args(argv, argv + argc);
+  // aclicker::ParseAndSendInputToOS(argc, args);
+  // return 0;
+  
   // Setup SDL
   // [If using SDL_MAIN_USE_CALLBACKS: all code below until the main loop starts
   // would likely be your SDL_AppInit() function]

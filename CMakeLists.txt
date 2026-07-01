@@ -68,12 +68,11 @@ add_library(imgui STATIC ${IMGUI_SOURCES} ${IMGUI_BACKEND_SOURCES})
 target_include_directories(imgui PUBLIC
   ${imgui_SOURCE_DIR}
   ${imgui_SOURCE_DIR}/backends
-  Vulkan
-  Vulkan_INCLUDE_DIRS
+  ${Vulkan_INCLUDE_DIRS}
 )
 
 # Link imgui with sdl3, vulkan
-target_link_libraries(imgui PUBLIC SDL3::SDL3 Vulkan::Vulkan)
+target_link_libraries(imgui PUBLIC SDL3::SDL3 ${Vulkan_LIBRARIES})
 
 # Link main application with imgui, publically transitive linking(?) with what is linked with imgui
 # Mental model:
@@ -82,7 +81,7 @@ target_link_libraries(imgui PUBLIC SDL3::SDL3 Vulkan::Vulkan)
 #
 #  Mental model seems to be wrong with how project is setup
 #  Requires (at least) vulkan linked with main project directly, not transitively
-target_link_libraries(${CMAKE_PROJECT_NAME} PUBLIC imgui SDL3::SDL3 Vulkan)
+target_link_libraries(${CMAKE_PROJECT_NAME} PUBLIC imgui)
 
 message(STATUS "imgui_headers: ${imgui_headers}")
 message(STATUS "imgui_src: ${imgui_src}")

@@ -13,12 +13,6 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS true)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/$<CONFIGURATION>")
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/$<CONFIGURATION>")
 
-# set the output directory for built objects.
-# This makes sure that the dynamic library goes into the build directory automatically.
-# set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/$<CONFIGURATION>")
-# set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/$<CONFIGURATION>")
-
-
 # Populate dependencies
 include(FetchContent)
 find_package(Vulkan)
@@ -29,15 +23,25 @@ FetchContent_Declare(
   GIT_REPOSITORY https://github.com/libsdl-org/SDL.git
   GIT_TAG origin/main
 )
+set(SDL_STATIC ON)
+FetchContent_MakeAvailable(sdl3)
 
-# imgui user interface | docking branch for docking support
+# imgui user interface + docking branch for docking support
 FetchContent_Declare(
   imgui
   GIT_REPOSITORY https://github.com/ocornut/imgui.git
   GIT_TAG origin/docking
 )
+FetchContent_MakeAvailable(imgui)
 
-FetchContent_MakeAvailable(sdl3 imgui)
+FetchContent_Declare(
+  googletest
+  GIT_REPOSITORY https://github.com/google/googletest.git
+  GIT_TAG origin/main
+)
+# For Windows: Prevent overriding the parent project's compiler/linker settings
+set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
+FetchContent_MakeAvailable(googletest)
 
 # Create executable target
 add_executable("${CMAKE_PROJECT_NAME}"
@@ -45,22 +49,15 @@ add_executable("${CMAKE_PROJECT_NAME}"
   ./src/inputsendcore.cpp
 )
 
-# Include Directories for main project
-target_include_directories(${CMAKE_PROJECT_NAME} PUBLIC
-  "${imgui_SOURCE_DIR}"
-  "${imgui_SOURCE_DIR}/backends"
-  "./include/"
-)
-
 # 0. Fetchcontent of imgui, and use <subproject>_SOURCE_DIR to extract *h and *cpp files
 # 1. Create imgui static library target (against recommendations of the quick start guide)
-# 2. Link cpp and h files to imgui target
+# 2. Link cpp and h files to imgui target (publically, so that anything that links with it can also get it)
 # Imgui cpp files
 file(GLOB IMGUI_SOURCES
   ${imgui_SOURCE_DIR}/*.cpp
 )
 
-# Backends
+# List imgui backends
 set(IMGUI_BACKEND_SOURCES
   ${imgui_SOURCE_DIR}/backends/imgui_impl_sdl3.cpp
   ${imgui_SOURCE_DIR}/backends/imgui_impl_vulkan.cpp
@@ -77,20 +74,20 @@ target_include_directories(imgui PUBLIC
 )
 
 # Link imgui with sdl3, vulkan
-target_link_libraries(imgui PUBLIC SDL3::SDL3 ${Vulkan_LIBRARIES})
+# SDL3::SDL3-static should be a static library to link with
+target_link_libraries(imgui PUBLIC SDL3::SDL3-static ${Vulkan_LIBRARIES})
+
+# Include Directories for main project
+target_include_directories(${CMAKE_PROJECT_NAME} PUBLIC
+  "./include/"
+)
 
 # Link main application with imgui, publically transitive linking(?) with what is linked with imgui
 # Mental model:
-#  struct imgui : public SDL3, Vulkan {};
+#  struct imgui : public SDL3, public Vulkan {};
 #  struct CMAKE_PROJECT_NAME : public imgui {};
 #
 #  Mental model seems to be wrong with how project is setup
 #  Requires (at least) vulkan linked with main project directly, not transitively
 target_link_libraries(${CMAKE_PROJECT_NAME} PUBLIC imgui)
-
-message(STATUS "imgui_headers: ${imgui_headers}")
-message(STATUS "imgui_src: ${imgui_src}")
-
-message(STATUS "imgui_source_dir: ${imgui_SOURCE_DIR}")
-message(STATUS "sdl3_source_dir: ${SDL3_SOURCE_DIR}")
 

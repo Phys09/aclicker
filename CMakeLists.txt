@@ -23,7 +23,7 @@ FetchContent_Declare(
   GIT_REPOSITORY https://github.com/libsdl-org/SDL.git
   GIT_TAG origin/main
 )
-set(SDL_STATIC ON)
+set(SDL_STATIC ON) # Configure to build static sdl3 to link with later
 FetchContent_MakeAvailable(sdl3)
 
 # imgui user interface + docking branch for docking support
@@ -43,10 +43,20 @@ FetchContent_Declare(
 set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
 FetchContent_MakeAvailable(googletest)
 
+# Create executable target dependencies
+file(GLOB APPLICATION_SOURCES
+  ./src/*.cpp)
+
 # Create executable target
 add_executable("${CMAKE_PROJECT_NAME}"
-  ./src/aclicker.cpp
-  ./src/inputsendcore.cpp
+  ${APPLICATION_SOURCES}
+)
+
+# Add name of imgui demoproject
+set(imgui_demo_app "imguidemo")
+# Create demo project that shows everything
+add_executable(${imgui_demo_app}
+  ./srcdemo/imguidemo.cpp
 )
 
 # 0. Fetchcontent of imgui, and use <subproject>_SOURCE_DIR to extract *h and *cpp files
@@ -78,16 +88,19 @@ target_include_directories(imgui PUBLIC
 target_link_libraries(imgui PUBLIC SDL3::SDL3-static ${Vulkan_LIBRARIES})
 
 # Include Directories for main project
-target_include_directories(${CMAKE_PROJECT_NAME} PUBLIC
+target_include_directories(${CMAKE_PROJECT_NAME} PRIVATE
+  "./include/"
+)
+
+# Include Directories for demo project
+target_include_directories(${imgui_demo_app} PRIVATE
   "./include/"
 )
 
 # Link main application with imgui, publically transitive linking(?) with what is linked with imgui
-# Mental model:
-#  struct imgui : public SDL3, public Vulkan {};
-#  struct CMAKE_PROJECT_NAME : public imgui {};
-#
-#  Mental model seems to be wrong with how project is setup
-#  Requires (at least) vulkan linked with main project directly, not transitively
-target_link_libraries(${CMAKE_PROJECT_NAME} PUBLIC imgui)
+# Requires (at least) vulkan linked with main project directly, not transitively
+target_link_libraries(${CMAKE_PROJECT_NAME} PRIVATE imgui)
+
+# Link demo project with imgui
+target_link_libraries(${imgui_demo_app} PRIVATE imgui)
 

@@ -1,3 +1,4 @@
+// Demo application for Dear ImGui
 // Dear ImGui: standalone example application for SDL3 + Vulkan
 
 // Learn about Dear ImGui:
@@ -25,8 +26,6 @@
 #include "inputsendcore.h"
 #include <SDL3/SDL.h>
 #include <SDL3/SDL_vulkan.h>
-#include <array>
-#include <cstdint>
 #include <cstdio>  // printf, fprintf
 #include <cstdlib> // abort
 #include <format>
@@ -86,9 +85,8 @@ debug_report(VkDebugReportFlagsEXT flags, VkDebugReportObjectTypeEXT objectType,
   (void)messageCode;
   (void)pUserData;
   (void)pLayerPrefix; // Unused arguments
-  std::println(stderr,
-               "[vulkan] Debug report from ObjectType: {}\nMessage: {}\n",
-               static_cast<int>(objectType), pMessage);
+  std::println(stderr, "[vulkan] Debug report from ObjectType: {}\nMessage: {}\n",
+          static_cast<int>(objectType), pMessage);
   return VK_FALSE;
 }
 #endif // APP_USE_VULKAN_DEBUG_REPORT
@@ -126,11 +124,9 @@ static void SetupVulkan(ImVector<const char *> instance_extensions) {
 
     // Enable required extensions
     if (IsExtensionAvailable(
-            properties,
-            VK_KHR_GET_PHYSICAL_DEVICE_PROPERTIES_2_EXTENSION_NAME)) {
+            properties, VK_KHR_GET_PHYSICAL_DEVICE_PROPERTIES_2_EXTENSION_NAME))
       instance_extensions.push_back(
           VK_KHR_GET_PHYSICAL_DEVICE_PROPERTIES_2_EXTENSION_NAME);
-    }
 #ifdef VK_KHR_PORTABILITY_ENUMERATION_EXTENSION_NAME
     if (IsExtensionAvailable(properties,
                              VK_KHR_PORTABILITY_ENUMERATION_EXTENSION_NAME)) {
@@ -204,7 +200,7 @@ static void SetupVulkan(ImVector<const char *> instance_extensions) {
       device_extensions.push_back(VK_KHR_PORTABILITY_SUBSET_EXTENSION_NAME);
 #endif
 
-    const float queue_priority[] = {1.0F};
+    const float queue_priority[] = {1.0f};
     VkDeviceQueueCreateInfo queue_info[1] = {};
     queue_info[0].sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
     queue_info[0].queueFamilyIndex = g_QueueFamily;
@@ -227,21 +223,20 @@ static void SetupVulkan(ImVector<const char *> instance_extensions) {
   // If you wish to load e.g. additional textures you may need to alter pools
   // sizes and maxSets.
   {
-    std::array<VkDescriptorPoolSize, 2> pool_sizes{{
-        {.type = VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE,
-         .descriptorCount = IMGUI_IMPL_VULKAN_MINIMUM_SAMPLED_IMAGE_POOL_SIZE},
-        {.type = VK_DESCRIPTOR_TYPE_SAMPLER,
-         .descriptorCount = IMGUI_IMPL_VULKAN_MINIMUM_SAMPLER_POOL_SIZE},
-    }};
+    VkDescriptorPoolSize pool_sizes[] = {
+        {VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE,
+         IMGUI_IMPL_VULKAN_MINIMUM_SAMPLED_IMAGE_POOL_SIZE},
+        {VK_DESCRIPTOR_TYPE_SAMPLER,
+         IMGUI_IMPL_VULKAN_MINIMUM_SAMPLER_POOL_SIZE},
+    };
     VkDescriptorPoolCreateInfo pool_info = {};
     pool_info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
     pool_info.flags = VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT;
     pool_info.maxSets = 0;
-    for (VkDescriptorPoolSize &pool_size : pool_sizes) {
+    for (VkDescriptorPoolSize &pool_size : pool_sizes)
       pool_info.maxSets += pool_size.descriptorCount;
-    }
-    pool_info.poolSizeCount = static_cast<uint32_t>(pool_sizes.size());
-    pool_info.pPoolSizes = pool_sizes.data();
+    pool_info.poolSizeCount = (uint32_t)IM_COUNTOF(pool_sizes);
+    pool_info.pPoolSizes = pool_sizes;
     err = vkCreateDescriptorPool(g_Device, &pool_info, g_Allocator,
                                  &g_DescriptorPool);
     check_vk_result(err);
@@ -257,21 +252,20 @@ static void SetupVulkanWindow(ImGui_ImplVulkanH_Window *wd,
   vkGetPhysicalDeviceSurfaceSupportKHR(g_PhysicalDevice, g_QueueFamily, surface,
                                        &res);
   if (res != VK_TRUE) {
-    std::println(stderr, "Error no WSI support on physical device 0");
-    std::exit(-1);
+    fprintf(stderr, "Error no WSI support on physical device 0\n");
+    exit(-1);
   }
 
   // Select Surface Format
-  const std::array<const VkFormat, 4> requestSurfaceImageFormat = {
+  const VkFormat requestSurfaceImageFormat[] = {
       VK_FORMAT_B8G8R8A8_UNORM, VK_FORMAT_R8G8B8A8_UNORM,
       VK_FORMAT_B8G8R8_UNORM, VK_FORMAT_R8G8B8_UNORM};
   const VkColorSpaceKHR requestSurfaceColorSpace =
       VK_COLORSPACE_SRGB_NONLINEAR_KHR;
   wd->Surface = surface;
   wd->SurfaceFormat = ImGui_ImplVulkanH_SelectSurfaceFormat(
-      g_PhysicalDevice, wd->Surface, requestSurfaceImageFormat.data(),
-      static_cast<int>(requestSurfaceImageFormat.size()),
-      requestSurfaceColorSpace);
+      g_PhysicalDevice, wd->Surface, requestSurfaceImageFormat,
+      (size_t)IM_COUNTOF(requestSurfaceImageFormat), requestSurfaceColorSpace);
 
   // Select Present Mode
 #ifdef APP_USE_UNLIMITED_FRAME_RATE
@@ -321,15 +315,12 @@ static void FrameRender(ImGui_ImplVulkanH_Window *wd, ImDrawData *draw_data) {
   VkResult err = vkAcquireNextImageKHR(g_Device, wd->Swapchain, UINT64_MAX,
                                        image_acquired_semaphore, VK_NULL_HANDLE,
                                        &wd->FrameIndex);
-  if (err == VK_ERROR_OUT_OF_DATE_KHR || err == VK_SUBOPTIMAL_KHR) {
+  if (err == VK_ERROR_OUT_OF_DATE_KHR || err == VK_SUBOPTIMAL_KHR)
     g_SwapChainRebuild = true;
-  }
-  if (err == VK_ERROR_OUT_OF_DATE_KHR) {
+  if (err == VK_ERROR_OUT_OF_DATE_KHR)
     return;
-  }
-  if (err != VK_SUBOPTIMAL_KHR) {
+  if (err != VK_SUBOPTIMAL_KHR)
     check_vk_result(err);
-  }
 
   ImGui_ImplVulkanH_Frame *fd = &wd->Frames[wd->FrameIndex];
   {
@@ -388,9 +379,8 @@ static void FrameRender(ImGui_ImplVulkanH_Window *wd, ImDrawData *draw_data) {
 }
 
 static void FramePresent(ImGui_ImplVulkanH_Window *wd) {
-  if (g_SwapChainRebuild) {
+  if (g_SwapChainRebuild)
     return;
-  }
   VkSemaphore render_complete_semaphore =
       wd->FrameSemaphores[wd->SemaphoreIndex].RenderCompleteSemaphore;
   VkPresentInfoKHR info = {};
@@ -401,27 +391,28 @@ static void FramePresent(ImGui_ImplVulkanH_Window *wd) {
   info.pSwapchains = &wd->Swapchain;
   info.pImageIndices = &wd->FrameIndex;
   VkResult err = vkQueuePresentKHR(g_Queue, &info);
-  if (err == VK_ERROR_OUT_OF_DATE_KHR || err == VK_SUBOPTIMAL_KHR) {
+  if (err == VK_ERROR_OUT_OF_DATE_KHR || err == VK_SUBOPTIMAL_KHR)
     g_SwapChainRebuild = true;
-  }
-  if (err == VK_ERROR_OUT_OF_DATE_KHR) {
+  if (err == VK_ERROR_OUT_OF_DATE_KHR)
     return;
-  }
-  if (err != VK_SUBOPTIMAL_KHR) {
+  if (err != VK_SUBOPTIMAL_KHR)
     check_vk_result(err);
-  }
   wd->SemaphoreIndex =
       (wd->SemaphoreIndex + 1) %
       wd->SemaphoreCount; // Now we can use the next set of semaphores
 }
 
-// main() function
+// Main code
 int main(int argc, char **argv) {
+  if (argc != 2) {
+    std::println("Usage: ./aclicker.exe <number-of-clicks>");
+    return -1;
+  }
   // using namespace std::literals;
   // std::vector<std::string> args(argv, argv + argc);
   // aclicker::ParseAndSendInputToOS(argc, args);
   // return 0;
-
+  
   // Setup SDL
   // [If using SDL_MAIN_USE_CALLBACKS: all code below until the main loop starts
   // would likely be your SDL_AppInit() function]
@@ -448,23 +439,22 @@ int main(int argc, char **argv) {
     uint32_t sdl_extensions_count = 0;
     const char *const *sdl_extensions =
         SDL_Vulkan_GetInstanceExtensions(&sdl_extensions_count);
-    for (uint32_t n = 0; n < sdl_extensions_count; n++) {
+    for (uint32_t n = 0; n < sdl_extensions_count; n++)
       extensions.push_back(sdl_extensions[n]);
-    }
   }
   SetupVulkan(extensions);
 
   // Create Window Surface
   VkSurfaceKHR surface;
   VkResult err;
-  if (not SDL_Vulkan_CreateSurface(window, g_Instance, g_Allocator, &surface)) {
+  if (SDL_Vulkan_CreateSurface(window, g_Instance, g_Allocator, &surface) ==
+      0) {
     std::println("Failed to create Vulkan surface.");
     return 1;
   }
 
   // Create Framebuffers
-  int w;
-  int h;
+  int w, h;
   SDL_GetWindowSizeInPixels(window, &w, &h);
   ImGui_ImplVulkanH_Window *wd = &g_MainWindowData;
   SetupVulkanWindow(wd, surface, w, h);
@@ -480,8 +470,7 @@ int main(int argc, char **argv) {
       ImGuiConfigFlags_NavEnableKeyboard; // Enable Keyboard Controls
   io.ConfigFlags |=
       ImGuiConfigFlags_NavEnableGamepad; // Enable Gamepad Controls
-  ImGui::GetIO().ConfigFlags |=
-      ImGuiConfigFlags_DockingEnable; // Enable docking windows
+  io.ConfigFlags |= ImGuiConfigFlags_DockingEnable; // Enable Docking Windows
 
   // Setup Dear ImGui style
   ImGui::StyleColorsDark();
@@ -549,7 +538,7 @@ int main(int argc, char **argv) {
   // Our state
   bool show_demo_window = true;
   bool show_another_window = false;
-  ImVec4 clear_color = ImVec4(0.45F, 0.55F, 0.60F, 1.00F);
+  ImVec4 clear_color = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);
 
   // Main loop
   bool done = false;
@@ -568,13 +557,11 @@ int main(int argc, char **argv) {
     SDL_Event event;
     while (SDL_PollEvent(&event)) {
       ImGui_ImplSDL3_ProcessEvent(&event);
-      if (event.type == SDL_EVENT_QUIT) {
+      if (event.type == SDL_EVENT_QUIT)
         done = true;
-      }
       if (event.type == SDL_EVENT_WINDOW_CLOSE_REQUESTED &&
-          event.window.windowID == SDL_GetWindowID(window)) {
+          event.window.windowID == SDL_GetWindowID(window))
         done = true;
-      }
     }
 
     // [If using SDL_MAIN_USE_CALLBACKS: all code below would likely be your
@@ -606,14 +593,13 @@ int main(int argc, char **argv) {
     // 1. Show the big demo window (Most of the sample code is in
     // ImGui::ShowDemoWindow()! You can browse its code to learn more about Dear
     // ImGui!).
-    if (show_demo_window) {
+    if (show_demo_window)
       ImGui::ShowDemoWindow(&show_demo_window);
-    }
 
     // 2. Show a simple window that we create ourselves. We use a Begin/End pair
     // to create a named window.
     {
-      static float f = 0.0F;
+      static float f = 0.0f;
       static int counter = 0;
 
       ImGui::Begin("Hello, world!"); // Create a window called "Hello, world!"
@@ -626,21 +612,20 @@ int main(int argc, char **argv) {
           &show_demo_window); // Edit bools storing our window open/close state
       ImGui::Checkbox("Another Window", &show_another_window);
 
-      ImGui::SliderFloat("float", &f, 0.0F,
-                         1.0F); // Edit 1 float using a slider from 0.0f to 1.0f
+      ImGui::SliderFloat("float", &f, 0.0f,
+                         1.0f); // Edit 1 float using a slider from 0.0f to 1.0f
       ImGui::ColorEdit3(
           "clear color",
           (float *)&clear_color); // Edit 3 floats representing a color
 
-      if (ImGui::Button("Button")) { // Buttons return true when clicked (most
-        // widgets return true when edited/activated)
+      if (ImGui::Button("Button")) // Buttons return true when clicked (most
+                                   // widgets return true when edited/activated)
         counter++;
-      }
       ImGui::SameLine();
       ImGui::Text("counter = %d", counter);
 
       ImGui::Text("Application average %.3f ms/frame (%.1f FPS)",
-                  1000.0F / io.Framerate, io.Framerate);
+                  1000.0f / io.Framerate, io.Framerate);
       ImGui::End();
     }
 
@@ -652,9 +637,8 @@ int main(int argc, char **argv) {
                                  // window will have a closing button that will
                                  // clear the bool when clicked)
       ImGui::Text("Hello from another window!");
-      if (ImGui::Button("Close Me")) {
+      if (ImGui::Button("Close Me"))
         show_another_window = false;
-      }
       ImGui::End();
     }
 
@@ -662,7 +646,7 @@ int main(int argc, char **argv) {
     ImGui::Render();
     ImDrawData *draw_data = ImGui::GetDrawData();
     const bool is_minimized =
-        (draw_data->DisplaySize.x <= 0.0F || draw_data->DisplaySize.y <= 0.0F);
+        (draw_data->DisplaySize.x <= 0.0f || draw_data->DisplaySize.y <= 0.0f);
     if (!is_minimized) {
       wd->ClearValue.color.float32[0] = clear_color.x * clear_color.w;
       wd->ClearValue.color.float32[1] = clear_color.y * clear_color.w;

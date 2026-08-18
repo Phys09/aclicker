@@ -404,10 +404,6 @@ static void FramePresent(ImGui_ImplVulkanH_Window *wd) {
 
 // Main code
 int main(int argc, char **argv) {
-  if (argc != 2) {
-    std::println("Usage: ./aclicker.exe <number-of-clicks>");
-    return -1;
-  }
   // using namespace std::literals;
   // std::vector<std::string> args(argv, argv + argc);
   // aclicker::ParseAndSendInputToOS(argc, args);

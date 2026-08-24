@@ -520,40 +520,47 @@ int main(int argc, char **argv) {
   init_info.CheckVkResultFn = check_vk_result;
   ImGui_ImplVulkan_Init(&init_info);
 
-  // Load Fonts
-  // - If fonts are not explicitly loaded, Dear ImGui will select an embedded
-  // font: either AddFontDefaultVector() or AddFontDefaultBitmap().
-  //   This selection is based on (style.FontSizeBase * style.FontScaleMain *
-  //   style.FontScaleDpi) reaching a small threshold.
-  // - You can load multiple fonts and use ImGui::PushFont()/PopFont() to select
-  // them.
-  // - If a file cannot be loaded, AddFont functions will return a nullptr.
-  // Please handle those errors in your code (e.g. use an assertion, display an
-  // error and quit).
-  // - Read 'docs/FONTS.md' for more instructions and details.
-  // - Use '#define IMGUI_ENABLE_FREETYPE' in your imconfig file to use FreeType
-  // for higher quality font rendering.
-  // - Remember that in C/C++ if you want to include a backslash \ in a string
-  // literal you need to write a double backslash \\ !
-  // style.FontSizeBase = 20.0f;
-  // io.Fonts->AddFontDefaultVector();
-  // io.Fonts->AddFontDefaultBitmap();
-  // io.Fonts->AddFontFromFileTTF("c:\\Windows\\Fonts\\segoeui.ttf");
-  // io.Fonts->AddFontFromFileTTF("../../misc/fonts/DroidSans.ttf");
-  // io.Fonts->AddFontFromFileTTF("../../misc/fonts/Roboto-Medium.ttf");
-  // io.Fonts->AddFontFromFileTTF("../../misc/fonts/Cousine-Regular.ttf");
-  // ImFont* font =
-  // io.Fonts->AddFontFromFileTTF("c:\\Windows\\Fonts\\ArialUni.ttf");
-  // IM_ASSERT(font != nullptr);
+  /** Loading Fonts
+   *  - If fonts are not explicitly loaded, Dear ImGui will select an embedded
+   *  font: either AddFontDefaultVector() or AddFontDefaultBitmap().
+   *    This selection is based on (style.FontSizeBase * style.FontScaleMain *
+   *    style.FontScaleDpi) reaching a small threshold.
+   *  - You can load multiple fonts and use ImGui::PushFont()/PopFont() to
+   * select them.
+   *  - If a file cannot be loaded, AddFont functions will return a nullptr.
+   *  Please handle those errors in your code (e.g. use an assertion, display an
+   *  error and quit).
+   *  - Read 'docs/FONTS.md' for more instructions and details.
+   *  - Use '#define IMGUI_ENABLE_FREETYPE' in your imconfig file to use
+   * FreeType for higher quality font rendering.
+   *  - Remember that in C/C++ if you want to include a backslash \ in a string
+   *  literal you need to write a double backslash \\ !
+   *  style.FontSizeBase = 20.0f;
+   *  io.Fonts->AddFontDefaultVector();
+   *  io.Fonts->AddFontDefaultBitmap();
+   *  io.Fonts->AddFontFromFileTTF("c:\\Windows\\Fonts\\segoeui.ttf");
+   *  io.Fonts->AddFontFromFileTTF("../../misc/fonts/DroidSans.ttf");
+   *  io.Fonts->AddFontFromFileTTF("../../misc/fonts/Roboto-Medium.ttf");
+   *  io.Fonts->AddFontFromFileTTF("../../misc/fonts/Cousine-Regular.ttf");
+   *  ImFont* font =
+   *  io.Fonts->AddFontFromFileTTF("c:\\Windows\\Fonts\\ArialUni.ttf");
+   *  IM_ASSERT(font != nullptr);
+   */
 
-  // Our state
+  /** Application State Variables */
   bool show_demo_window = true;
   bool show_another_window = false;
+  bool hold_left_clicks = false;
+  bool hold_right_clicks = false;
+  bool do_left_clicks = false;
+  bool do_right_clicks = false;
+  int left_click_delay_ms = 250;
+  int right_click_delay_ms = 250;
   ImVec4 clear_color = ImVec4(0.45F, 0.55F, 0.60F, 1.00F);
 
-  // Main loop
-  bool done = false;
-  while (!done) {
+  /** Main Rendering Loop */
+  bool done_rendering_UI = false;
+  while (not done_rendering_UI) {
     // Poll and handle events (inputs, window resize, etc.)
     // You can read the io.WantCaptureMouse, io.WantCaptureKeyboard flags to
     // tell if dear imgui wants to use your inputs.
@@ -569,11 +576,11 @@ int main(int argc, char **argv) {
     while (SDL_PollEvent(&event)) {
       ImGui_ImplSDL3_ProcessEvent(&event);
       if (event.type == SDL_EVENT_QUIT) {
-        done = true;
+        done_rendering_UI = true;
       }
       if (event.type == SDL_EVENT_WINDOW_CLOSE_REQUESTED &&
           event.window.windowID == SDL_GetWindowID(window)) {
-        done = true;
+        done_rendering_UI = true;
       }
     }
 
@@ -603,6 +610,10 @@ int main(int argc, char **argv) {
     ImGui_ImplSDL3_NewFrame();
     ImGui::NewFrame();
 
+    // Create a dockspace in main viewport, where central node is transparent.
+    ImGui::DockSpaceOverViewport(0, ImGui::GetMainViewport(),
+                                 ImGuiDockNodeFlags_PassthruCentralNode);
+
     // 1. Show the big demo window (Most of the sample code is in
     // ImGui::ShowDemoWindow()! You can browse its code to learn more about Dear
     // ImGui!).
@@ -613,34 +624,52 @@ int main(int argc, char **argv) {
     // 2. Show a simple window that we create ourselves. We use a Begin/End pair
     // to create a named window.
     {
-      static float f = 0.0F;
       static int counter = 0;
 
-      ImGui::Begin("Hello, world!"); // Create a window called "Hello, world!"
-                                     // and append into it.
+      ImGui::Begin("Main aclicker UI"); // Create a window to display aclicker
+                                        // gui and append into it.
 
       ImGui::Text("This is some useful text."); // Display some text (you can
-                                                // use a format strings too)
-      ImGui::Checkbox(
-          "Demo Window",
-          &show_demo_window); // Edit bools storing our window open/close state
-      ImGui::Checkbox("Another Window", &show_another_window);
-
-      ImGui::SliderFloat("float", &f, 0.0F,
-                         1.0F); // Edit 1 float using a slider from 0.0f to 1.0f
-      ImGui::ColorEdit3(
-          "clear color",
-          (float *)&clear_color); // Edit 3 floats representing a color
-
-      if (ImGui::Button("Button")) { // Buttons return true when clicked (most
-        // widgets return true when edited/activated)
-        counter++;
-      }
+                                                // use a c-format strings too)
+      ImGui::Checkbox("Demo Window + Debug", &show_demo_window);
       ImGui::SameLine();
-      ImGui::Text("counter = %d", counter);
+      ImGui::Checkbox("Show other window?", &show_another_window);
 
-      ImGui::Text("Application average %.3f ms/frame (%.1f FPS)",
-                  1000.0F / io.Framerate, io.Framerate);
+      if (ImGui::BeginTable("configure_clicker", 2)) {
+
+        ImGui::TableNextRow();
+        ImGui::TableNextColumn();
+
+        ImGui::Checkbox("Left Click?", &do_left_clicks);
+        ImGui::TableNextColumn();
+        ImGui::Checkbox("Right Click?", &do_right_clicks);
+        ImGui::TableNextRow();
+        ImGui::TableNextColumn();
+
+        ImGui::Checkbox("Hold Left Button", &hold_left_clicks);
+        ImGui::TableNextColumn();
+        ImGui::Checkbox("Hold Right Button", &hold_right_clicks);
+        ImGui::TableNextRow();
+        ImGui::TableNextColumn();
+
+        ImGui::InputInt("Left Click Delay (ms)", &left_click_delay_ms);
+        ImGui::TableNextColumn();
+        ImGui::InputInt("Right Click Delay (ms)", &right_click_delay_ms);
+        ImGui::TableNextRow();
+        ImGui::TableNextColumn();
+
+        if (ImGui::Button("Button")) { // Buttons return true when clicked (most
+          // widgets return true when edited/activated)
+          counter++;
+        }
+        ImGui::SameLine();
+        ImGui::Text("counter = %d", counter);
+
+        ImGui::Text("Application average %.3f ms/frame (%.1f FPS)",
+                    1000.0F / io.Framerate, io.Framerate);
+
+        ImGui::EndTable();
+      }
       ImGui::End();
     }
 
@@ -673,9 +702,8 @@ int main(int argc, char **argv) {
     }
   }
 
-  // Cleanup
-  // [If using SDL_MAIN_USE_CALLBACKS: all code below would likely be your
-  // SDL_AppQuit() function]
+  // Cleanup [If using SDL_MAIN_USE_CALLBACKS: all code below would likely be
+  // your SDL_AppQuit() function]
   err = vkDeviceWaitIdle(g_Device);
   check_vk_result(err);
   ImGui_ImplVulkan_Shutdown();

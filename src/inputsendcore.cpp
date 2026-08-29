@@ -11,20 +11,18 @@
 #include <vector>
 #include <windows.h>
 
-void aclicker::SendLeftClicks(int n, std::chrono::milliseconds input_delay) {
-  if (n <= 0) {
+void aclicker::SendLeftClicks(int number_of_clicks, std::chrono::milliseconds delay_between_clicks_ms, std::chrono::milliseconds start_delay) {
+  if (number_of_clicks <= 0) {
     std::println(std::cerr, "Error: Negative Inputs not allowed");
     return;
   }
   using namespace std::literals;
 
-  std::vector<INPUT> mouseInputs{
-      {.type = INPUT_MOUSE, .mi = {.dwFlags = MOUSEEVENTF_LEFTDOWN}},
-      {.type = INPUT_MOUSE, .mi = {.dwFlags = MOUSEEVENTF_LEFTUP}}};
+  std::vector<INPUT> mouseInputs{{.type = INPUT_MOUSE, .mi = {.dwFlags = MOUSEEVENTF_LEFTDOWN}}, {.type = INPUT_MOUSE, .mi = {.dwFlags = MOUSEEVENTF_LEFTUP}}};
 
-  while (n-- > 0) {
+  while (number_of_clicks-- > 0) {
     SendInput(mouseInputs.size(), mouseInputs.data(), sizeof(INPUT));
-    std::this_thread::sleep_for(input_delay);
+    std::this_thread::sleep_for(delay_between_clicks_ms);
   }
 }
 

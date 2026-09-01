@@ -384,8 +384,8 @@ int main(int argc, char **argv) {
   // Create window with Vulkan graphics context
   float main_scale = SDL_GetDisplayContentScale(SDL_GetPrimaryDisplay());
   SDL_WindowFlags window_flags = SDL_WINDOW_VULKAN | SDL_WINDOW_RESIZABLE | SDL_WINDOW_HIDDEN | SDL_WINDOW_HIGH_PIXEL_DENSITY;
-  SDL_Window *window = SDL_CreateWindow("Dear ImGui SDL3+Vulkan example", (int)(1280 * main_scale), (int)(800 * main_scale), window_flags);
-  if (window == nullptr) {
+  SDL_Window *sdlWindow = SDL_CreateWindow("Dear ImGui SDL3+Vulkan example", (int)(1280 * main_scale), (int)(800 * main_scale), window_flags);
+  if (sdlWindow == nullptr) {
     std::println("Error: SDL_CreateWindow(): {}", SDL_GetError());
     return 1;
   }
@@ -403,19 +403,19 @@ int main(int argc, char **argv) {
   // Create Window Surface
   VkSurfaceKHR surface;
   VkResult err;
-  if (not SDL_Vulkan_CreateSurface(window, g_Instance, g_Allocator, &surface)) {
+  if (not SDL_Vulkan_CreateSurface(sdlWindow, g_Instance, g_Allocator, &surface)) {
     std::println("Failed to create Vulkan surface.");
     return 1;
   }
 
   // Create Framebuffers
-  int w;
-  int h;
-  SDL_GetWindowSizeInPixels(window, &w, &h);
+  int width;
+  int height;
+  SDL_GetWindowSizeInPixels(sdlWindow, &width, &height);
   ImGui_ImplVulkanH_Window *wd = &g_MainWindowData;
-  SetupVulkanWindow(wd, surface, w, h);
-  SDL_SetWindowPosition(window, SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED);
-  SDL_ShowWindow(window);
+  SetupVulkanWindow(wd, surface, width, height);
+  SDL_SetWindowPosition(sdlWindow, SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED);
+  SDL_ShowWindow(sdlWindow);
 
   // Setup Dear ImGui context
   IMGUI_CHECKVERSION();
@@ -431,20 +431,16 @@ int main(int argc, char **argv) {
 
   // Setup scaling
   ImGuiStyle &style = ImGui::GetStyle();
-  style.ScaleAllSizes(main_scale); // Bake a fixed style scale. (until we have a solution for
-                                   // dynamic style scaling, changing this requires resetting
-                                   // Style + calling this again)
-  style.FontScaleDpi = main_scale; // Set initial font scale. (in docking branch: using
-                                   // io.ConfigDpiScaleFonts=true automatically overrides this
-                                   // for every window depending on the current monitor)
+  style.ScaleAllSizes(main_scale); // Bake a fixed style scale. (until we have a solution for dynamic style scaling, changing this requires resetting Style +
+                                   // calling this again)
+  style.FontScaleDpi = main_scale; // Set initial font scale. (in docking branch: using io.ConfigDpiScaleFonts=true automatically overrides this for every
+                                   // window depending on the current monitor)
   style.FontScaleDpi *= 2.0F;      // Scale all sizes
 
   // Setup Platform/Renderer backends
-  ImGui_ImplSDL3_InitForVulkan(window);
+  ImGui_ImplSDL3_InitForVulkan(sdlWindow);
   ImGui_ImplVulkan_InitInfo init_info = {};
-  // init_info.ApiVersion = VK_API_VERSION_1_3;              // Pass in your
-  // value of VkApplicationInfo::apiVersion, otherwise will default to header
-  // version.
+  // init_info.ApiVersion = VK_API_VERSION_1_3; // Pass in your value of VkApplicationInfo::apiVersion, otherwise will default to header version.
   init_info.Instance = g_Instance;
   init_info.PhysicalDevice = g_PhysicalDevice;
   init_info.Device = g_Device;
@@ -511,21 +507,20 @@ int main(int argc, char **argv) {
       if (event.type == SDL_EVENT_QUIT) {
         done_rendering_UI = true;
       }
-      if (event.type == SDL_EVENT_WINDOW_CLOSE_REQUESTED && event.window.windowID == SDL_GetWindowID(window)) {
+      if (event.type == SDL_EVENT_WINDOW_CLOSE_REQUESTED && event.window.windowID == SDL_GetWindowID(sdlWindow)) {
         done_rendering_UI = true;
       }
     }
 
-    // [If using SDL_MAIN_USE_CALLBACKS: all code below would likely be your
-    // SDL_AppIterate() function]
-    if (SDL_GetWindowFlags(window) & SDL_WINDOW_MINIMIZED) {
+    // [If using SDL_MAIN_USE_CALLBACKS: all code below would likely be your SDL_AppIterate() function]
+    if (SDL_GetWindowFlags(sdlWindow) & SDL_WINDOW_MINIMIZED) {
       SDL_Delay(10);
       continue;
     }
 
     // Resize swap chain?
     int fb_width, fb_height;
-    SDL_GetWindowSizeInPixels(window, &fb_width, &fb_height);
+    SDL_GetWindowSizeInPixels(sdlWindow, &fb_width, &fb_height);
     if (fb_width > 0 && fb_height > 0 && (g_SwapChainRebuild || g_MainWindowData.Width != fb_width || g_MainWindowData.Height != fb_height)) {
       ImGui_ImplVulkan_SetMinImageCount(g_MinImageCount);
       ImGui_ImplVulkanH_CreateOrResizeWindow(g_Instance, g_PhysicalDevice, g_Device, wd, g_QueueFamily, g_Allocator, fb_width, fb_height, g_MinImageCount, 0);
@@ -541,9 +536,7 @@ int main(int argc, char **argv) {
     // Create a dockspace in main viewport, where central node is transparent.
     ImGui::DockSpaceOverViewport(0, ImGui::GetMainViewport(), ImGuiDockNodeFlags_PassthruCentralNode);
 
-    // 1. Show the big demo window (Most of the sample code is in
-    // ImGui::ShowDemoWindow()! You can browse its code to learn more about Dear
-    // ImGui!).
+    // 1. Show the big demo window (Most of the sample code is in ImGui::ShowDemoWindow()! You can browse its code to learn more about Dear ImGui!).
     if (appstate.show_demo_window) {
       ImGui::ShowDemoWindow(&(appstate.show_demo_window));
     }
@@ -553,7 +546,6 @@ int main(int argc, char **argv) {
     {
       static int counter = 0;
 
-      // ImGui::Begin("aclicker"); // Create a window to display aclicker gui and append into it.
       auto window = ImRAII::ImGuiWindowWidget("aclicker");
 
       ImGui::Text("This is some useful text."); // Display some text (you can
@@ -609,7 +601,6 @@ int main(int argc, char **argv) {
 
         ImGui::EndTable();
       }
-      // ImGui::End(); // old c-style without raii
     }
 
     // Rendering
@@ -636,7 +627,7 @@ int main(int argc, char **argv) {
   CleanupVulkanWindow(&g_MainWindowData);
   CleanupVulkan();
 
-  SDL_DestroyWindow(window);
+  SDL_DestroyWindow(sdlWindow);
   SDL_Quit();
 
   return 0;

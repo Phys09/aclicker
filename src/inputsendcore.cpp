@@ -13,10 +13,11 @@
 
 void aclicker::SendLeftClicks(int number_of_clicks, std::chrono::milliseconds delay_between_clicks_ms, std::chrono::milliseconds start_delay) {
   if (number_of_clicks <= 0) {
-    std::println(std::cerr, "Error: Negative Inputs not allowed");
+    std::println(std::cerr, "Error: Positive Inputs Only");
     return;
   }
   using namespace std::literals;
+  std::this_thread::sleep_for(start_delay);
 
   std::vector<INPUT> mouseInputs{{.type = INPUT_MOUSE, .mi = {.dwFlags = MOUSEEVENTF_LEFTDOWN}}, {.type = INPUT_MOUSE, .mi = {.dwFlags = MOUSEEVENTF_LEFTUP}}};
 
